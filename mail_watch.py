@@ -69,7 +69,10 @@ KINDS = [  # (kind, 中文, 关键词) —— 按顺序判断，先中先得
         r"(?:schedule|book|arrange) (?:an? |your )?(?:\w+ )?(?:interview|call|time|meeting)|"
         r"your availability|phone screen|video interview|interview (?:invitation|request)|"
         r"(?:complete|take) (?:an? |the |our )?(?:online )?assessment|"
-        r"move(?:d)? (?:you )?forward to the next (?:step|stage|round)", re.I)),
+        r"move(?:d)? (?:you )?forward to the next (?:step|stage|round)|"
+        # Hatch 等公司的后续环节：在线测评邀请、按需视频面试（常限 48 小时）、推荐人核查（Xref 等）
+        r"(?:invit\w*|invitation) (?:you )?to (?:complete|take)|on-demand video|one-way video|hirevue|"
+        r"(?:submit|provide) (?:your |the names of )?(?:professional )?references|reference check|xref", re.I)),
     ("receipt", "已收到申请", re.compile(r"received your application|thank you for (?:applying|your "
                                           r"application|your interest)|application (?:has been|was) "
                                           r"(?:received|submitted)|successfully submitted", re.I)),
