@@ -390,6 +390,7 @@ def main():
                 kind = classify(msg["subject"], msg["body"])
                 snippet = scrub(re.sub(r"\s+", " ", msg["body"]).strip(), names)[:400]
                 new_entries[key] = {"uid": t["uid"], "employer": t["employer"], "title": t["title"],
+                                    "msgid": msg["id"][:300],      # 看板用它跳到邮箱里的原信
                                     "from": msg["from"][:120], "subject": scrub(msg["subject"], names)[:200],
                                     "date": iso(msg["date"]) if msg["date"] else iso(now),
                                     "kind": kind, "snippet": snippet,
