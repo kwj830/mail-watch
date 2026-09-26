@@ -29,6 +29,7 @@ jobs:
           RADAR_TRACKER_REPO: ${{ secrets.RADAR_TRACKER_REPO }}
           RADAR_BOARD_URL: ${{ secrets.RADAR_BOARD_URL }}
           BARK_DEVICE_KEY: ${{ secrets.BARK_DEVICE_KEY }}
+          RADAR_REDACT_NAMES: ${{ secrets.RADAR_REDACT_NAMES }}
         run: python3 mail_watch.py
       - name: keepalive
         # 公开仓库 60 天没有提交，GitHub 会停掉定时任务；每周日提交一次心跳

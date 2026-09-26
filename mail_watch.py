@@ -341,6 +341,18 @@ def bark(key, title, body, url, call=False):
         return False        # 不打印异常：异常信息里带着含 key 的 URL
 
 
+_GREETING = re.compile(r"^\s*(?:dear|hi|hello|hey|good (?:morning|afternoon|day))\s+[^,:\n]{1,40}[,:]\s*", re.I)
+
+
+def scrub(text, names):
+    """存进 tracker 之前去掉称呼和本人姓名：记录里只需要雇主说了什么，不需要叫你什么。"""
+    text = _GREETING.sub("", text or "")
+    for n in names:
+        if len(n) >= 2:
+            text = re.sub(r"\b%s\b" % re.escape(n), "你", text, flags=re.I)
+    return text
+
+
 def entry_key(msg_id):
     return "m" + base64.urlsafe_b64encode(msg_id.encode()).decode().rstrip("=")[-40:]
 
@@ -351,6 +363,7 @@ def main():
     token, repo, bark_key = env("RADAR_TRACKER_TOKEN", ""), env("RADAR_TRACKER_REPO", ""), env("BARK_DEVICE_KEY", "")
     board = env("RADAR_BOARD_URL", "")
     own = {a.strip().lower() for a in (env("RADAR_OWN_ADDRS", "") + "," + user).split(",") if a.strip()}
+    names = [n.strip() for n in env("RADAR_REDACT_NAMES", "").split(",") if n.strip()]
     missing = [n for n, v in (("RADAR_EMAIL_USER", user), ("RADAR_EMAIL_PASSWORD", password),
                               ("RADAR_TRACKER_TOKEN", token), ("RADAR_TRACKER_REPO", repo),
                               ("BARK_DEVICE_KEY", bark_key)) if not v]
@@ -375,12 +388,12 @@ def main():
                 if not t:
                     continue
                 kind = classify(msg["subject"], msg["body"])
-                snippet = re.sub(r"\s+", " ", msg["body"]).strip()[:400]
+                snippet = scrub(re.sub(r"\s+", " ", msg["body"]).strip(), names)[:400]
                 new_entries[key] = {"uid": t["uid"], "employer": t["employer"], "title": t["title"],
-                                    "from": msg["from"][:120], "subject": msg["subject"][:200],
+                                    "from": msg["from"][:120], "subject": scrub(msg["subject"], names)[:200],
                                     "date": iso(msg["date"]) if msg["date"] else iso(now),
                                     "kind": kind, "snippet": snippet,
-                                    "timeline": timeline_hint(msg["body"]),
+                                    "timeline": scrub(timeline_hint(msg["body"]), names),
                                     "folder": "垃圾邮件" if "Spam" in msg["folder"] else "",
                                     "found_at": iso(now)}
         finally:
