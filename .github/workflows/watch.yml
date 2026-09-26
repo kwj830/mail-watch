@@ -1,0 +1,42 @@
+name: watch
+
+# 每小时检查一次（分钟位错开整点高峰）。公开仓库的 Actions 不限分钟数。
+# 所有配置都在 Secrets 里；脚本日志只打印数量。
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: run
+        env:
+          RADAR_EMAIL_USER: ${{ secrets.RADAR_EMAIL_USER }}
+          RADAR_EMAIL_PASSWORD: ${{ secrets.RADAR_EMAIL_PASSWORD }}
+          RADAR_OWN_ADDRS: ${{ secrets.RADAR_OWN_ADDRS }}
+          RADAR_TRACKER_TOKEN: ${{ secrets.RADAR_TRACKER_TOKEN }}
+          RADAR_TRACKER_REPO: ${{ secrets.RADAR_TRACKER_REPO }}
+          RADAR_BOARD_URL: ${{ secrets.RADAR_BOARD_URL }}
+          BARK_DEVICE_KEY: ${{ secrets.BARK_DEVICE_KEY }}
+        run: python3 mail_watch.py
+      - name: keepalive
+        # 公开仓库 60 天没有提交，GitHub 会停掉定时任务；每周日提交一次心跳
+        if: github.event_name == 'schedule'
+        run: |
+          if [ "$(date -u +%u%H)" = "700" ]; then
+            date -u +%F > .keepalive
+            git config user.name 'watch-bot'
+            git config user.email 'watch-bot@users.noreply.github.com'
+            git add .keepalive && git commit -qm "keepalive" && git push -q || true
+          fi
