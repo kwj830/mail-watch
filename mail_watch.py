@@ -63,9 +63,13 @@ KINDS = [  # (kind, 中文, 关键词) —— 按顺序判断，先中先得
                                      r"other candidates|not been selected|were not selected|"
                                      r"decided not to|no longer under consideration|"
                                      r"position has been filled|will not be proceeding", re.I)),
-    ("interview", "面试 / 下一步 ✨", re.compile(r"interview|schedule a (?:call|time|meeting)|"
-                                               r"your availability|phone screen|assessment|"
-                                               r"next steps? in (?:the|our) process|invite you", re.I)),
+    # 只认「请你来面试」这类说法：确认信里常有 interviewers、interview process 之类的套话
+    ("interview", "面试 / 下一步 ✨", re.compile(
+        r"invit(?:e|ing) you (?:to|for) (?:an? |the )?(?:\w+ )?(?:interview|call|conversation|meeting|assessment)|"
+        r"(?:schedule|book|arrange) (?:an? |your )?(?:\w+ )?(?:interview|call|time|meeting)|"
+        r"your availability|phone screen|video interview|interview (?:invitation|request)|"
+        r"(?:complete|take) (?:an? |the |our )?(?:online )?assessment|"
+        r"move(?:d)? (?:you )?forward to the next (?:step|stage|round)", re.I)),
     ("receipt", "已收到申请", re.compile(r"received your application|thank you for (?:applying|your "
                                           r"application|your interest)|application (?:has been|was) "
                                           r"(?:received|submitted)|successfully submitted", re.I)),
