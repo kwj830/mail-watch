@@ -177,8 +177,39 @@ def timeline_hint(body):
     return re.sub(r"\s+", " ", m.group(0)).strip()[:200] if m else ""
 
 
+def watches(tracker, now=None):
+    """tracker["watches"]：非雇主、但要第一时间知道的发件人（如账号审核结果）。
+
+    每条 {id, label, since, rules: [{from: 地址片段, name: 发件人名正则(可选)}]}
+    """
+    now = now or datetime.now(timezone.utc)
+    out = []
+    for w in tracker.get("watches") or []:
+        if not w.get("id") or not w.get("rules") or w.get("off"):
+            continue
+        since = _parse_iso(w.get("since")) or (now - timedelta(days=7))
+        out.append(dict(w, since=since))
+    return out
+
+
+def watch_match(msg, wlist):
+    name, addr = parseaddr(msg.get("from", ""))
+    addr = addr.lower()
+    date = msg.get("date")
+    for w in wlist:
+        if date and date < w["since"]:
+            continue
+        for r in w["rules"]:
+            if r.get("from") and r["from"].lower() in addr and \
+                    (not r.get("name") or re.search(r["name"], name or "", re.I)):
+                return w
+    return None
+
+
 def should_ring(entry, now_utc):
     """没看过的来信，在晚上 18:00–22:59 用持续响铃再提醒。"""
+    if str(entry.get("uid", "")).startswith("watch:"):
+        return False          # 关注的发件人只推一次，不长响
     if entry.get("seen_at") or entry.get("ignored"):
         return False
     rings = entry.get("rings") or []
@@ -376,15 +407,28 @@ def main():
     now = datetime.now(timezone.utc)
     tracker, _sha = get_tracker(repo, token)
     tlist = targets(tracker, now)
+    wlist = watches(tracker, now)
     known = tracker.get("mail") or {}
     new_entries, pushed = {}, []
-    if tlist:
-        since = min(t["since"] for t in tlist)
+    if tlist or wlist:
+        since = min([t["since"] for t in tlist] + [w["since"] for w in wlist])
         conn, msgs = fetch(user, password, since, own)
         try:
             for msg in msgs:
                 key = entry_key(msg["id"])
-                if key in known or not header_candidates(msg, tlist):
+                if key in known:
+                    continue
+                w = watch_match(msg, wlist)
+                if w:
+                    new_entries[key] = {"uid": "watch:" + w["id"], "employer": w.get("label") or w["id"],
+                                        "title": "", "msgid": msg["id"][:300], "from": msg["from"][:120],
+                                        "subject": scrub(msg["subject"], names)[:200],
+                                        "date": iso(msg["date"]) if msg["date"] else iso(now),
+                                        "kind": "other", "snippet": "", "timeline": "",
+                                        "folder": "垃圾邮件" if "Spam" in msg["folder"] else "",
+                                        "found_at": iso(now)}
+                    continue
+                if not tlist or not header_candidates(msg, tlist):
                     continue
                 msg["body"] = fetch_body(conn, msg)
                 t = match(msg, tlist)
@@ -408,6 +452,10 @@ def main():
     link = board + ("#applied" if board else "")
     for key, e in new_entries.items():
         where = "（在垃圾邮件里！）" if e["folder"] else ""
+        if e["uid"].startswith("watch:"):
+            if bark(bark_key, "📮 %s 有新邮件" % e["employer"], "%s%s\n去邮箱查看" % (e["subject"], where), ""):
+                pushed.append(key)
+            continue
         if bark(bark_key, "📬 %s 来信 · %s" % (e["employer"], KIND_ZH[e["kind"]]),
                 "%s%s\n点开看板「已投递」查看" % (e["subject"], where), link):
             pushed.append(key)
