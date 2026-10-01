@@ -45,7 +45,10 @@ MAX_LOOKBACK_DAYS = 60
 ATS_DOMAINS = ("successfactors", "myworkday", "workday.com", "greenhouse", "lever.co",
                "icims", "taleo", "smartrecruiters", "jobvite", "ashbyhq", "bamboohr",
                "ultipro", "ukg", "dayforce", "ceridian", "oraclecloud", "avature",
-               "phenom", "eightfold", "hirevue", "brassring", "pageuppeople", "njoyn")
+               "phenom", "eightfold", "hirevue", "brassring", "pageuppeople", "njoyn",
+               # 测评平台：替雇主发「下一轮」邀请（2026-09-30 Hatch 用的是 Plum）
+               "plum.io", "pymetrics", "codility", "hackerrank", "criteriacorp", "shl.com", "talogy",
+               "harver", "sova", "xref", "vervoe", "testgorilla", "willo", "spark hire", "sparkhire")
 # 求职网站的订阅提醒 —— 里面满是雇主名，但不是雇主来信
 ALERT_DOMAINS = ("linkedin.com", "indeed.com", "indeedemail.com", "jobbank.gc.ca",
                  "guichetemplois.gc.ca", "glassdoor", "ziprecruiter", "talent.com",
@@ -70,6 +73,11 @@ KINDS = [  # (kind, 中文, 关键词) —— 按顺序判断，先中先得
         r"your availability|phone screen|video interview|interview (?:invitation|request)|"
         r"(?:complete|take) (?:an? |the |our )?(?:online )?assessment|"
         r"move(?:d)? (?:you )?forward to the next (?:step|stage|round)|"
+        # 2026-09-30 Hatch 经 Plum 发来：「Hatch is moving you to the next stage in their hiring process」
+        r"mov(?:e|ed|ing) (?:you )?(?:forward )?(?:on )?(?:to|into) the next (?:step|stage|round)|"
+        r"next (?:step|stage|round) (?:in|of) (?:their|our|the) (?:hiring|recruitment|selection|application) process|"
+        r"(?:complete|take|finish) (?:your |the |our |a |an )?(?:online )?(?:assessment|questionnaire|"
+        r"aptitude test|skills test|game-based assessment)\b|plum profile|pymetrics|codility|hackerrank|criteria corp|"
         # Hatch 等公司的后续环节：在线测评邀请、按需视频面试（常限 48 小时）、推荐人核查（Xref 等）
         r"(?:invit\w*|invitation) (?:you )?to (?:complete|take)|on-demand video|one-way video|hirevue|"
         r"(?:submit|provide) (?:your |the names of )?(?:professional )?references|reference check|xref", re.I)),

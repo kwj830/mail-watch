@@ -1,10 +1,10 @@
 name: watch
 
-# 每小时检查一次（分钟位错开整点高峰）。公开仓库的 Actions 不限分钟数。
+# 每 10 分钟检查一次（2026-09-30：每小时太慢，Hatch 来信本人比提醒先看到）。公开仓库的 Actions 不限分钟数。
 # 所有配置都在 Secrets 里；脚本日志只打印数量。
 on:
   schedule:
-    - cron: '23 * * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
         # 公开仓库 60 天没有提交，GitHub 会停掉定时任务；每周日提交一次心跳
         if: github.event_name == 'schedule'
         run: |
-          if [ "$(date -u +%u%H)" = "700" ]; then
+          if [ "$(date -u +%u%H%M | cut -c1-4)" = "700" ] && [ "$(date -u +%M)" -lt 10 ]; then
             date -u +%F > .keepalive
             git config user.name 'watch-bot'
             git config user.email 'watch-bot@users.noreply.github.com'
