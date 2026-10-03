@@ -420,7 +420,16 @@ def main():
     new_entries, pushed = {}, []
     if tlist or wlist:
         since = min([t["since"] for t in tlist] + [w["since"] for w in wlist])
-        conn, msgs = fetch(user, password, since, own)
+        # Gmail 偶尔会断开 IMAP 连接（2026-10-01 一次「abort」导致整轮失败）：等几秒重试，最多 3 次
+        for attempt in range(3):
+            try:
+                conn, msgs = fetch(user, password, since, own)
+                break
+            except (imaplib.IMAP4.abort, OSError) as exc:
+                if attempt == 2:
+                    raise
+                print("连接邮箱失败（%s），%d 秒后重试" % (type(exc).__name__, 10 * (attempt + 1)))
+                time.sleep(10 * (attempt + 1))
         try:
             for msg in msgs:
                 key = entry_key(msg["id"])
