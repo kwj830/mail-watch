@@ -287,11 +287,21 @@ def fetch(user, password, since, own_addrs):
                 continue
             typ, data = conn.search(None, "SINCE", since.strftime("%d-%b-%Y"))
             ids = (data[0] or b"").split() if typ == "OK" else []
-            for num in ids[-800:]:
-                typ, hd = conn.fetch(num, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID LIST-ID)])")
-                if typ != "OK" or not hd or not isinstance(hd[0], tuple):
+            # 批量取信头（每批 200 封）：逐封取几百封要 7 分多钟，2026-10-06 差点碰到 8 分钟上限
+            heads = []
+            ids = ids[-800:]
+            for i in range(0, len(ids), 200):
+                chunk = ids[i:i + 200]
+                typ, data = conn.fetch(b",".join(chunk), "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID LIST-ID)])")
+                if typ != "OK" or not data:
                     continue
-                h = email.message_from_bytes(hd[0][1])
+                for part in data:
+                    if isinstance(part, tuple):
+                        m = re.match(rb"(\d+) ", part[0])
+                        if m:
+                            heads.append((m.group(1), part[1]))
+            for num, raw in heads:
+                h = email.message_from_bytes(raw)
                 frm = _dec(h.get("From"))
                 if parseaddr(frm)[1].lower() in own_addrs:
                     continue
