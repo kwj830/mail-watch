@@ -277,7 +277,7 @@ def _body_text(m):
 
 def fetch(user, password, since, own_addrs):
     """只读登录，返回 (conn, [{id, from, subject, date, list_id, body=None}])。"""
-    conn = imaplib.IMAP4_SSL("imap.gmail.com", 993)
+    conn = imaplib.IMAP4_SSL("imap.gmail.com", 993, timeout=45)   # 2026-10-05 无超时时卡到任务被强制取消，来信晚 3 小时才提醒
     out = []
     try:
         conn.login(user, password)
