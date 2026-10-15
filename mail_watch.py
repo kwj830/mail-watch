@@ -396,9 +396,15 @@ def bark(key, title, body, url, call=False):
 _GREETING = re.compile(r"^\s*(?:dear|hi|hello|hey|good (?:morning|afternoon|day))\s+[^,:\n]{1,40}[,:]\s*", re.I)
 
 
+_URL = re.compile(r"https?://\S+|www\.\S+", re.I)
+
+
 def scrub(text, names):
-    """存进 tracker 之前去掉称呼和本人姓名：记录里只需要雇主说了什么，不需要叫你什么。"""
-    text = _GREETING.sub("", text or "")
+    """存进 tracker 之前去掉称呼和本人姓名：记录里只需要雇主说了什么，不需要叫你什么。
+
+    链接也换成 🔗：激活/登录链接带一次性令牌，不该存下来；而且几百字符不换行的长链接
+    会把手机上的看板撑宽，整页被缩小（2026-10-14 TD 账号验证邮件就是这样）。"""
+    text = _URL.sub("🔗", _GREETING.sub("", text or ""))
     for n in names:
         if len(n) >= 2:
             text = re.sub(r"\b%s\b" % re.escape(n), "你", text, flags=re.I)
